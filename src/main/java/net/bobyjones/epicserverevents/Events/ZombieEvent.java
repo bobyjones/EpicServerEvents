@@ -13,6 +13,7 @@ import net.minecraft.entity.mob.SpiderEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.predicate.entity.EntityPredicates;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -157,7 +158,9 @@ public class ZombieEvent {
                                 spawnZombieGroup(ZombieGroupType.BASIC, world.random.nextInt(3) + 5, bossZombie.getPos().add(0,5,0));
                             }
                         }else if (abilityChance <= 0.85) {
-                            //launch player but I can't figure this shit out
+                            for (Entity entity : world.getOtherEntities(bossZombie, bossZombie.getBoundingBox().expand(8), EntityPredicates.VALID_LIVING_ENTITY)) {
+                                entity.setVelocity(0, 2, 0);
+                            }
                         }else {
                             bossJumping = true;
                             bossZombie.setInvulnerable(true);
