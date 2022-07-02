@@ -19,6 +19,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -40,12 +41,14 @@ public class ZombieEvent {
     public static LivingEntity bossZombie;
     public static int numberOfWaves = 0;
     public static boolean bossJumping = false;
+    public static int lastJumped = 0;
     public static void run(ServerPlayerEntity Player) {
         eventPhase = ZombieEventPhase.PHASE_START;
         blockPos = Player.getBlockPos();
         world = Player.getServer().getOverworld();
         bossBar = new ServerBossBar(Text.literal("The Zombie Army approaches"), BossBar.Color.RED, BossBar.Style.PROGRESS);
         bossBar.setPercent(0);
+        sendMessage(Text.literal("§7Spawn fills with fog, something is about to happen......"));
         ServerTickEvents.END_SERVER_TICK.register(ZombieEvent::tick);
     }
 
@@ -66,7 +69,7 @@ public class ZombieEvent {
         switch (eventPhase) {
             case PHASE_START -> {
                 bossBar.setStyle(BossBar.Style.PROGRESS);
-                bossBar.setName(phaseNumber < numberOfWaves ? Text.literal("A wave of zombies is coming") : Text.literal("The Mother Zombie approaches"));
+                bossBar.setName(phaseNumber < numberOfWaves ? Text.literal("A wave of Zombies is coming") : Text.literal("The Mother Zombie approaches"));
                 bossBar.setPercent(t/200f);
                 t++;
                 if (t >= 200) {
@@ -104,12 +107,14 @@ public class ZombieEvent {
                             bossZombie.setVelocity(1,1,1);
                             bossZombie.setOnGround(false);
                             bossZombie.collidedSoftly = true;
+                            sendMessage(Text.literal("§7The sky is filled with rage, something is coming...."));
                         }else {
                             bossZombie.fallDistance = 0;
                             if (bossZombie.isOnGround()) {
                                 world.createExplosion(bossZombie, bossZombie.getX(), bossZombie.getY(), bossZombie.getZ(), 5f, Explosion.DestructionType.NONE);
                                 t=0;
                                 bossZombie.playSound(SoundEvents.ENTITY_WITHER_SPAWN, 1, 1);
+                                sendMessage(Text.literal("§4<Mother Zombie> You have killed all of my beautiful children, now you will pay!"));
                                 eventPhase = ZombieEventPhase.BOSS_PHASE;
                             }
                         }
@@ -139,12 +144,13 @@ public class ZombieEvent {
                 }
 
                 t++;
-                //action every 5 seconds
+                //action every 150 ticks
                 if (!bossJumping) {
-                    if (t >= 100) {
+                    if (t >= 150) {
                         t=0;
                         float abilityChance = world.random.nextFloat();
-                        if (abilityChance <= 0.50) {
+                        if (abilityChance <= 0.85 && lastJumped != 4 || lastJumped == 0) {
+                            lastJumped++;
                             float zombieType = world.random.nextFloat();
                             if (zombieType <= 0.2f) {
                                 spawnZombieGroup(ZombieGroupType.STRONG, world.random.nextInt(3) + 3, bossZombie.getPos().add(0,5,0));
@@ -157,15 +163,35 @@ public class ZombieEvent {
                             } else {
                                 spawnZombieGroup(ZombieGroupType.BASIC, world.random.nextInt(3) + 5, bossZombie.getPos().add(0,5,0));
                             }
-                        }else if (abilityChance <= 0.85) {
-                            for (Entity entity : world.getOtherEntities(bossZombie, bossZombie.getBoundingBox().expand(8), EntityPredicates.VALID_LIVING_ENTITY)) {
-                                entity.setVelocity(0, 2, 0);
+
+                            float messageSent = world.random.nextInt(5);
+
+                            if (messageSent == 0) {
+                                sendMessage(Text.literal("§4<Mother Zombie> Go forth new children!"));
+                            } else if (messageSent ==1) {
+                                sendMessage(Text.literal("§4<Mother Zombie> Go my new children, protect your mother!"));
+                            }else if (messageSent ==2) {
+                                sendMessage(Text.literal("§4<Mother Zombie> Go forth new children, defeat the enemy!"));
+                            }else if (messageSent ==3) {
+                                sendMessage(Text.literal("§4<Mother Zombie> You wont last long against these zombies!"));
+                            }else if (messageSent ==4) {
+                                sendMessage(Text.literal("§4<Mother Zombie> Defeat them my brave new babies!"));
                             }
-                        }else {
+                        } else {
+                            lastJumped = 0;
                             bossJumping = true;
                             bossZombie.setInvulnerable(true);
-                            world.createExplosion(null, bossZombie.getX(), bossZombie.getY(), bossZombie.getZ(), 5, Explosion.DestructionType.NONE);
+                            world.createExplosion(null, bossZombie.getX(), bossZombie.getY(), bossZombie.getZ(), 10, Explosion.DestructionType.NONE);
                             bossZombie.setVelocity(world.random.nextFloat()*3, 5,world.random.nextFloat()*3);
+
+                            float messageSent = world.random.nextInt(3);
+                            if (messageSent ==0) {
+                                sendMessage(Text.literal("§4<Mother Zombie> Take this!"));
+                            }else if (messageSent ==1) {
+                                sendMessage(Text.literal("§4<Mother Zombie> RAAAAAAHHH!"));
+                            }else if (messageSent ==2) {
+                                sendMessage(Text.literal("§4<Mother Zombie> AAAAAAAAAAAAAA!"));
+                            }
                         }
                     }
                 }else {
@@ -178,22 +204,40 @@ public class ZombieEvent {
             }
 
             case END_PHASE -> {
+                sendMessage(Text.literal("§4<Mother Zombie> NOOOOOOOOOOOO!"));
+                sendMessage(Text.literal("§4<Mother Zombie> My husband will come looking, you arnt safe for long!"));
+                sendMessage(Text.literal("§4<Mother Zombie> Avenge me.... honey......."));
+
+
                 //drop rewards
                 for (int i = 0; i < 100; i++) {
                     ExperienceOrbEntity orb = EntityType.EXPERIENCE_ORB.create(world);
                     orb.setPos(bossZombie.getX()+(world.random.nextInt(10)-5), bossZombie.getY()+5, bossZombie.getZ()+(world.random.nextInt(10)-5));
                     world.spawnEntity(orb);
                 }
-                ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
-                sword.addEnchantment(Enchantments.SHARPNESS, 5);
-                sword.addEnchantment(Enchantments.UNBREAKING, 5);
-                sword.addEnchantment(Enchantments.LOOTING, 5);
-                sword.setCustomName(Text.literal("Mothers Sword"));
 
+                //rare reward
+                ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
+                sword.addEnchantment(Enchantments.SHARPNESS, 7);
+                sword.addEnchantment(Enchantments.UNBREAKING, 7);
+                sword.addEnchantment(Enchantments.LOOTING, 7);
+                sword.setCustomName(Text.literal("Mothers Sword"));
                 ItemEntity item = EntityType.ITEM.create(world);
                 item.setStack(sword);
                 item.setPos(bossZombie.getX(), bossZombie.getY(), bossZombie.getZ());
                 world.spawnEntity(item);
+
+                //all players reward
+                for (Entity entity : world.getOtherEntities(bossZombie, bossZombie.getBoundingBox().expand(64))) {
+                    if (entity instanceof ServerPlayerEntity player) {
+                        player.addExperienceLevels(30);
+                        ItemStack apple = new ItemStack(Items.ENCHANTED_GOLDEN_APPLE);
+                        apple.setCount(2);
+                        apple.setCustomName(Text.literal("Mothers Apple"));
+                        player.getInventory().insertStack(apple);
+                    }
+                }
+
 
                 //clean up stuff
                 bossBar.clearPlayers();
@@ -219,6 +263,12 @@ public class ZombieEvent {
     public static void updateZombies() {
         spawnedZombies.removeIf(LivingEntity::isDead);
         spawnedZombies.removeIf(LivingEntity::isRemoved);
+    }
+
+    public static void sendMessage(Text text) {
+        for (ServerPlayerEntity player : world.getPlayers()) {
+            player.sendMessage(text);
+        }
     }
 
     //spawns a group of zombies at a position, and equips them according to the Zombie Type
@@ -253,7 +303,7 @@ public class ZombieEvent {
                     zombie.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.WOODEN_SWORD));
                 }
                 case TANK -> {
-                    zombie.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 99999, 9));
+                    zombie.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 99999, 10));
                     zombie.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 99999, 1));
                     zombie.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 99999, 1));
                     zombie.equipStack(EquipmentSlot.HEAD, new ItemStack(Items.DIAMOND_HELMET));
