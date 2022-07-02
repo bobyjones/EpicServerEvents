@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "epicserverevents",
+  "version": "1.0",
+
+  "name": "Epic Server Events",
+  "description": "events for epic server",
+  "authors": [
+    "bobyjones"
+  ],
+  "contact": {
+    "sources": ""
+  },
+
+  "license": "NONE",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.bobyjones.epicserverevents.EpicServerEvents"
+    ]
+  },
+  "mixins": [
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.14.6",
+    "fabric": "*",
+    "minecraft": "~1.19",
+    "java": ">=17"
+  }
+}
